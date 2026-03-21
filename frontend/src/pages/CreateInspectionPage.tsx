@@ -1,5 +1,5 @@
 import React from 'react'
-import Navbar from '../component/layout/navbar'
+import Navbar from '../component/layout/Navbar'
 import CreateInspection from '../component/createInspection/CreateInspection'
 
 const CreateInspectionPage = () => {

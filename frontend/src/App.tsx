@@ -7,8 +7,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* <Route path="/" element={<HistoryPage />} /> */}
-        <Route path="/" element={<CreateInspectionPage  />} />
+        <Route path="/" element={<HistoryPage />} />
+        <Route path="/CreateInspection" element={<CreateInspectionPage  />} />
         <Route path="/InspectionResult/:id" element={<InspectionResultPage />} />
       </Routes>
     </BrowserRouter>
