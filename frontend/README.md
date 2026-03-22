@@ -1,75 +1,64 @@
-# React + TypeScript + Vite
+ได้เลยครับ! ในเมื่อระบบของคุณเชื่อมต่อกันได้สมบูรณ์แล้ว (Backend + MongoDB + Frontend) ไฟล์ README.md ที่ดีควรจะอธิบายวิธีการติดตั้งและโครงสร้างของโปรเจกต์ให้ชัดเจน
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+นี่คือร่างไฟล์ README.md ที่เหมาะสมกับโปรเจกต์ Rice Inspection System ของคุณครับ:
 
-Currently, two official plugins are available:
+🌾 Rice Inspection System
+ระบบตรวจสอบมาตรฐานข้าว (Full-stack Application) ที่รองรับการจัดการข้อมูลมาตรฐานการตรวจวัดและประวัติการตรวจสอบ โดยใช้เทคโนโลยีสมัยใหม่และการจัดการด้วย Docker
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+🚀 Stack ที่ใช้
+Frontend: React + Vite + TypeScript
 
-## React Compiler
+Backend: Node.js (Express) + TypeScript
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+Database: MongoDB
 
-Note: This will impact Vite dev & build performances.
+Infrastructure: Docker & Docker Compose
 
-## Expanding the ESLint configuration
+โครงสร้างโปรเจกต์ (Project Structure)
+Plaintext
+.
+├── backend/            # Express API (TypeScript)
+│   ├── src/
+│   │   ├── models/     # Mongoose Schemas
+│   │   ├── routes/     # API Endpoints
+│   │   └── server.ts   # Entry point
+│   └── package.json
+├── frontend/           # Vite React App (TypeScript)
+│   ├── src/
+│   └── package.json
+└── docker-compose.yml  # การตั้งค่า Container ทั้งหมด
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+🛠️ วิธีการติดตั้งและรันระบบ (Getting Started)
+1. เตรียมความพร้อม
+เครื่องของคุณต้องติดตั้ง:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Docker
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Docker Compose
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+2. การตั้งค่า Environment
+สร้างไฟล์ .env ในโฟลเดอร์ backend/ และระบุค่าดังนี้:
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+ข้อมูลโค้ด
+MONGODB_URI=mongodb://mongodb:27017/inspection_db
+PORT=5000
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+3. รันระบบด้วย Docker
+ใช้คำสั่งเดียวเพื่อ Build และ Start ทุก Services:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Bash
+docker-compose up --build
+
+ฟีเจอร์หลัก (Key Features)
+Auto-Seeding: ระบบจะทำการเพิ่มข้อมูลมาตรฐานจาก standard.json เข้าสู่ฐานข้อมูลโดยอัตโนมัติในการรันครั้งแรก
+
+History Tracking: บันทึกและดึงข้อมูลประวัติการตรวจสอบข้าว
+
+Standard Management: จัดการเกณฑ์มาตรฐานความบริสุทธิ์และสิ่งเจือปนของข้าว
+
+💡 คำสั่งที่มีประโยชน์ (Useful Commands)
+หยุดการทำงาน: docker-compose down
+
+ล้างข้อมูลใน DB ทั้งหมด: docker-compose down -v (ลบ volume)
+
+ดู Log ของ Backend: docker-compose logs -f backend
