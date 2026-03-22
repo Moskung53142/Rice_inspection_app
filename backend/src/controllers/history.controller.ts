@@ -11,9 +11,13 @@ export const getAllHistory = async (req: Request, res: Response) => {
 
         if (inspectionID) query.inspectionID = new RegExp(inspectionID as string, 'i');
         if (fromDate && toDate) {
+            const start = new Date(fromDate as string);
+            const end = new Date(toDate as string);
+            end.setHours(23, 59, 59, 999); 
+
             query.createDate = {
-                $gte: new Date(fromDate as string),
-                $lte: new Date(toDate as string)
+                $gte: start,
+                $lte: end
             };
         }
 

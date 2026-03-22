@@ -5,15 +5,6 @@ import { format, isValid } from 'date-fns';
 import 'react-day-picker/dist/style.css';
 import axios from 'axios';
 
-const mockData = Array.from({ length: 10 }, (_, i) => ({
-  id: i,
-  createDate: "28/08/2023 18:00:00",
-  inspectionID: "MI-000-0000",
-  name: "Name1",
-  standard: "Standard1",
-  note: "________________"
-}));
-
 const History = () => {
   const navigate = useNavigate();
 
@@ -30,7 +21,7 @@ const History = () => {
     dateRange: undefined as DateRange | undefined
   });
 
-  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   const [currPageIdx, setCurrPageIdx] = useState<number>(0);
   const rowPerPage = 10;
@@ -44,12 +35,16 @@ const History = () => {
       const response = await axios.get('http://localhost:5000/history', {
         params: {
           inspectionID: appliedFilters.id || undefined,
-          startDate: appliedFilters.dateRange?.from?.toISOString(),
-          endDate: appliedFilters.dateRange?.to?.toISOString(),
+          fromDate: appliedFilters.dateRange?.from?.toISOString(),
+          toDate: appliedFilters.dateRange?.to?.toISOString(),
         }
       });
 
-      setData(response.data);
+      if (response.data && Array.isArray(response.data.data)) {
+        setData(response.data.data);
+      } else if (Array.isArray(response.data)) {
+        setData(response.data);
+      }
     } catch (error) {
       console.error("Fetch error:", error);
     } finally {
@@ -96,11 +91,11 @@ const History = () => {
     if (selectedItems.length === data.length && data.length > 0) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(data.map(item => item.id || item._id));
+      setSelectedItems(data.map(item => item.inspectionID));
     }
   };
 
-  const toggleSelectItem = (id: number) => {
+  const toggleSelectItem = (id: any) => {
     setSelectedItems(prev =>
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
@@ -111,8 +106,9 @@ const History = () => {
 
     if (window.confirm(`Are you sure you want to delete ${selectedItems.length} items?`)) {
       try {
-        await axios.post('/api/history/delete', {
-          ids: selectedItems
+        console.log(selectedItems);
+        await axios.post('http://localhost:5000/history/delete', {
+          inspectionID: selectedItems
         });
 
         alert("Deleted successfully");
@@ -127,6 +123,8 @@ const History = () => {
 
   const displayData = useMemo(() => {
     const start = currPageIdx * rowPerPage;
+
+    if (!Array.isArray(data)) return [];
     return data.slice(start, start + rowPerPage);
   }, [data, currPageIdx]);
 
@@ -252,7 +250,7 @@ const History = () => {
                   type="checkbox"
                   className="w-4 h-4 accent-white cursor-pointer"
                   onChange={toggleSelectAll}
-                  checked={selectedItems.length === mockData.length}
+                  checked={selectedItems.length === data.length}
                 />
               </th>
               <th className="py-3 px-4 font-semibold">Create Date - Time</th>
@@ -270,10 +268,10 @@ const History = () => {
                 <td colSpan={6} className="py-10 text-center text-gray-400">Loading data...</td>
               </tr>
             ) : (
-              displayData.map((item) => (
+              displayData.map((item, idx) => (
                 <tr
-                  key={item.id}
-                  onClick={() => navigate(`/InspectionResult/${item.id}`)}
+                  key={idx}
+                  onClick={() => navigate(`/InspectionResult/${item.inspectionID}`)}
                   className="border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   <td
@@ -283,14 +281,16 @@ const History = () => {
                     <input
                       type="checkbox"
                       className="w-4 h-4 accent-[#1F7B44] cursor-pointer"
-                      checked={selectedItems.includes(item.id)}
-                      onChange={() => toggleSelectItem(item.id)}
+                      checked={selectedItems.includes(item.inspectionID)}
+                      onChange={() => toggleSelectItem(item.inspectionID)}
                     />
                   </td>
-                  <td className="py-4 px-4 whitespace-nowrap">{item.createDate}</td>
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    {item.createDate ? format(new Date(item.createDate), 'dd/MM/yyyy HH:mm:ss') : '-'}
+                  </td>
                   <td className="py-4 px-4">{item.inspectionID}</td>
                   <td className="py-4 px-4">{item.name}</td>
-                  <td className="py-4 px-4">{item.standard}</td>
+                  <td className="py-4 px-4">{item.standardName}</td>
                   <td className="py-4 px-4 text-gray-400">{item.note}</td>
                 </tr>
               ))

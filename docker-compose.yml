@@ -2,12 +2,14 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "5173:5173"
     depends_on:
       - backend
 
   backend:
     build: ./backend
+    ports:
+      - "5000:5000"
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/inspection_db 
     depends_on:

@@ -5,7 +5,7 @@ const router = Router();
 
 router.get('/', historyController.getAllHistory);
 router.post('/', historyController.createHistory);
-router.delete('/', historyController.deleteHistory);
+router.post('/delete', historyController.deleteHistory);
 router.get('/:id', historyController.getHistoryById);
 router.patch('/:id', historyController.patchHistory);
 
