@@ -36,14 +36,16 @@ export const getHistoryById = async (req: Request, res: Response) => {
 
 export const createHistory = async (req: Request, res: Response) => {
     try {
-        const { standardID, name, note, price, samplingPoint, imageLink } = req.body;
+        const { standardID, name, note, price, samplingPoint, imageLink, grains } = req.body;
+
+        const dataSource = (grains && grains.length > 0) ? grains : RiceRawData.grains;
 
         const selectedStandard = await Standard.findOne({ id: standardID });
         if (!selectedStandard) {
             return res.status(404).json({ message: "Standard not found" });
         }
 
-        const { composition, defects } = calculateAllMetrics(RiceRawData.grains, selectedStandard.standardData);
+        const { composition, defects } = calculateAllMetrics(dataSource, selectedStandard.standardData);
 
         const fullStandardData = selectedStandard.standardData.map((std: any) => {
             const calculated = composition.find(c => c.key === std.key);

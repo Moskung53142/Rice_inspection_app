@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { DayPicker } from 'react-day-picker';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import 'react-day-picker/dist/style.css';
 import axios from 'axios';
 
@@ -9,15 +9,6 @@ const SamplingPoints = [
     { id: 1, name: 'Front End' },
     { id: 2, name: 'Back End' },
     { id: 3, name: 'Other' },
-]
-
-const standardname = [
-    { id: 1, name: 'a' },
-    { id: 2, name: 'b' },
-    { id: 3, name: 'c' },
-    { id: 4, name: 'd' },
-    { id: 5, name: 'e' },
-    { id: 6, name: 'f' },
 ]
 
 const CreateInspection = () => {
@@ -30,11 +21,11 @@ const CreateInspection = () => {
     const standardCombobox = useRef<HTMLDivElement>(null);
 
     const [fileName, setFileName] = useState<string>("");
-    const [jsonData, setJsonData] = useState<any[]>([]);
+    const [uploadGrains, setUploadGrains] = useState<any[] | null>(null);
 
     const [note, setNote] = useState<string>('');
 
-    const [price, setPrice] = useState<number>(0);
+    const [price, setPrice] = useState<number | string>('');
     const [priceWarning, setPriceWarning] = useState<boolean>(false);
     const minPrice = 0;
     const maxPrice = 100000;
@@ -48,8 +39,25 @@ const CreateInspection = () => {
     const CalendarBox = useRef<HTMLDivElement>(null);
     const DatetimeInputRef = useRef<HTMLDivElement>(null);
 
-    const handleSelect = (standard: string) => {
+    const [standards, setStandards] = useState<{ id: string, name: string }[]>([]);
+    const [selectedStandardId, setSelectedStandardId] = useState<string>('');
+
+    useEffect(() => {
+        const fetchStandards = async () => {
+            try {
+                const res = await axios.get('http://localhost:5000/standard');
+                console.log("Full Response:", res.data);
+                setStandards(Array.isArray(res.data) ? res.data : res.data.data || []);
+            } catch (err) {
+                console.error("Fetch standards error:", err);
+            }
+        };
+        fetchStandards();
+    }, []);
+
+    const handleSelect = (id: string, standard: string) => {
         setSelectStandard(standard);
+        setSelectedStandardId(id);
         setShowStandard(false);
     }
 
@@ -60,14 +68,12 @@ const CreateInspection = () => {
             reader.onload = (e) => {
                 try {
                     const data = JSON.parse(e.target?.result as string);
-
-                    if (Array.isArray(data)) {
-                        setJsonData(data);
+                    if (data.grains && Array.isArray(data.grains)) {
+                        setUploadGrains(data.grains);
                     } else {
-                        alert("JSON data must be an array of standard data");
+                        alert("Invalid format: JSON must contain a 'grains' array");
                     }
-                }
-                catch (err) {
+                } catch (err) {
                     alert("Invalid JSON format");
                 }
             };
@@ -78,15 +84,17 @@ const CreateInspection = () => {
     };
 
     const checkPriceInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = parseFloat(e.target.value);
+        const valString = e.target.value;
 
-        if (!value || value < minPrice || value > maxPrice) {
-            setPriceWarning(true);
-        }
-        else {
+        if (valString === "") {
+            setPrice("");
             setPriceWarning(false);
+            return;
         }
-        setPrice(value);
+
+        const value = parseFloat(valString);
+        setPriceWarning(isNaN(value) || value < minPrice || value > maxPrice);
+        setPrice(valString);
     }
 
     const handleMultiCheckbox = (idx: number) => {
@@ -127,40 +135,44 @@ const CreateInspection = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const sortSamplingPointIdx = [...selectSamplingPointIdx].sort((a, b) => a - b)
-        const samplingPointNames = sortSamplingPointIdx.map(idx => SamplingPoints[idx].name);
-
-        const payload = {
-            name: name,                            
-            createDate: new Date().toISOString(),   
-            imageLink: "https://easyrice-es-trade-data.s3.ap-southeast-1.amazonaws.com/example-rice.webp",                          
-            inspectionID: "",                      
-            standardID: "",              
-            note: note,
-            standardName: selectStandard,         
-            samplingDate: selectSamplingDatetime,  
-            samplingPoint: samplingPointNames,    
-            price: Number(price),                  
-            standardData: jsonData,              
-        };
-
-        if (payload.standardData.length === 0) {
-            alert("Please upload a JSON file (Standard Data is required)");
+        if (!name.trim()) {
+            alert("Name is required");
+            return;
+        }
+        if (!selectedStandardId) {
+            alert("Standard is required");
+            return;
+        }
+        if (!note.trim()) {
+            alert("Note is required");
             return;
         }
 
-        try {
-            const response = await axios.post('http://localhost:5000/history', payload)
+        if (Number(price) < 0 || Number(price) > 100000) {
+            alert("Price must be between 0 and 100,000");
+            return;
+        }
 
+        const samplingPointNames = selectSamplingPointIdx.map(idx => SamplingPoints[idx].name);
+
+        const payload = {
+            name,
+            standardID: selectedStandardId,
+            note,
+            price: Number(price) || 0,
+            samplingPoint: samplingPointNames,
+            samplingDate: selectSamplingDatetime,
+            grains: uploadGrains
+        };
+
+        try {
+            const response = await axios.post('http://localhost:5000/history', payload);
             if (response.status === 200 || response.status === 201) {
                 alert("Create Inspection Success!");
                 navigate('/');
-            } else {
-                alert("Submit failed!");
             }
-        } catch (error) {
-            console.error("Error submitting form:", error);
-            alert("Server error!");
+        } catch (error: any) {
+            alert(error.response?.data?.message || "Submit failed!");
         }
     };
 
@@ -214,13 +226,13 @@ const CreateInspection = () => {
                                 ref={standardCombobox}
                                 className='absolute left-0 top-[100%] max-h-40 w-full overflow-y-auto bg-white border border-gray-200 rounded-md shadow-xl z-50'
                             >
-                                {standardname.length > 0 ? (
-                                    standardname.map(item => (
+                                {standards.length > 0 ? (
+                                    standards.map(item => (
                                         <div
                                             key={item.id}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleSelect(item.name);
+                                                handleSelect(item.id, item.name); // ส่งทั้ง ID และ Name
                                             }}
                                             className='px-4 py-2 hover:bg-red-50 cursor-pointer text-gray-700 border-b border-gray-50 last:border-none'
                                         >
@@ -283,6 +295,7 @@ const CreateInspection = () => {
                         <input
                             id='Price'
                             type="number"
+                            step="0.01"
                             placeholder='Input price'
                             value={price}
                             onChange={(e) => checkPriceInput(e)}
@@ -329,9 +342,13 @@ const CreateInspection = () => {
                             }}
                         >
                             <p className={`${selectSamplingDatetime !== "" ? "text-black" : "text-gray-400"}`}>
-                                {selectSamplingDatetime
-                                    ? format(new Date(selectSamplingDatetime), 'dd/MM/yyyy HH:mm:ss')
-                                    : "Select sampling date"}
+                                {(() => {
+                                    if (!selectSamplingDatetime) return "Select sampling date";
+                                    const dateObj = new Date(selectSamplingDatetime);
+                                    return isValid(dateObj)
+                                        ? format(dateObj, 'dd/MM/yyyy HH:mm:ss')
+                                        : "Invalid Date";
+                                })()}
                             </p>
 
                             <div className='absolute bottom-2 right-2'>
